@@ -1,0 +1,1 @@
+@app.route('/submit',methods = ['POST', 'GET'])
