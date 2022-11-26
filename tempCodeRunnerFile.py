@@ -1,1 +1,2 @@
-@app.route('/submit',methods = ['POST', 'GET'])
+df['activity'] = train.get('activity')
+# df.head()

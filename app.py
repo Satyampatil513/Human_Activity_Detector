@@ -3,10 +3,19 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+import pickle
+from sklearn.decomposition import PCA
+pca = PCA(n_components = 3)
 
 #Connectivity
 app = Flask(__name__)
+# pikachu=pd.read_csv('Test.csv')
+
+# testing=pikachu
+# testing=testing.drop('fall',axis=1)
+# testing=testing.drop('label',axis=1)
+
+# testing=testing.iloc[:,1:]
 
 @app.route('/')
 def index():
@@ -16,46 +25,23 @@ def index():
 # @app.route('/submit',methods = ['POST', 'GET'])
 
 
+with open('Model1.pkl', 'rb') as file:  
+    Model1 = pickle.load(file)
+with open('random_forest.pkl', 'rb') as file:  
+    rf = pickle.load(file)
+with open('Model_act.pkl', 'rb') as file:  
+    M2 = pickle.load(file)
+with open('Model_asds.pkl', 'rb') as file:  
+    M3 = pickle.load(file)
+test=pd.read_csv('Train.csv')
+test=test.drop('label',axis=1)
+test=test.drop('fall',axis=1)
+test=test.drop('gyro_max',axis=1)
+test=test.iloc[:,1:]
+x=rf.predict(test)
+print(x)
 
-##Actual Code
 
-
-train = pd.read_csv(r"Train.csv")
-# print(train)
-#removed fall
-train=train.drop('fall',axis=1)
-fall=["FOL","FKL","SDL","BSC"]
-active=["STD","WAL","JOG","JUM"]
-asds=["STU","STN","SCH","CSI","CSO"]
-#divided in 3 categories
-act=[]
-
-for i in range (len(train)):
-    if train["label"][i] in fall:
-        act.append(0)
-    elif train["label"][i] in active:
-        act.append(1)
-    elif train["label"][i] in asds:
-        act.append(2)
-train["activity"]=act
-xtrain=train.iloc[:,:-1]
-xtrain=xtrain.drop('label',axis=1)
-xtrain=xtrain.drop('Unnamed: 0',axis=1)
-print(xtrain.columns)
-ytrain=train.activity
-
-#training model
-from sklearn.preprocessing import MinMaxScaler
-scaler=MinMaxScaler()
-xtr=scaler.fit_transform(xtrain)
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-
-#knn classifier
-k=10
-classifier=KNeighborsClassifier(n_neighbors=k)
-classifier.fit(xtr,ytrain)
 
 @app.route('/', methods=['POST'])
 def getvalue():
@@ -67,13 +53,57 @@ def getvalue():
     acc_skewness=float(request.form['acc_skewness'])
     gyro_skewness=float(request.form['gyro_skewness'])
     post_gyro_max=float(request.form['post_gyro_max'])
-    post_lin_max=float(request.form['post_lin_max'])
-    list=[acc_max,gyro_max,acc_kurtosis,gyro_kurtosis,lin_max,acc_skewness,gyro_skewness,post_gyro_max,post_lin_max]
+    # post_lin_max=float(request.form['post_lin_max'])
+    list=[acc_max,gyro_max,acc_kurtosis,gyro_kurtosis,lin_max,acc_skewness,gyro_skewness,post_gyro_max]
     list= np.array(list)
     list= list.reshape(1,-1)
-    pred=classifier.predict(list)
-    print(pred)
-    return render_template('pass.html', p=pred) 
+    
+    
+
+    
+     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # abc = pca.fit_transform(testing1)
+    pred=Model1.predict(list)
+    print(list)
+    print(pred[-1])
+    if pred[-1] == 0 :
+        pred="fall"
+        q=rf.predict(list)
+        q=q[-1]
+        if (q==1) : q="FOL"
+        elif (q==2) : q="FKL"
+        elif (q==3) : q="SDL"
+        else : q="BSC"
+        
+    elif pred[-1] == 1:
+        pred="active"
+        q=M2.predict(list)
+        q=q[-1]
+        if (q==5) : q="STANDING"
+        elif (q==6) : q="WALKING"
+        elif (q==7) : q="JOGGING"
+        else : q="JUMPING"
+    else :
+        q=M3.predict(list)
+        q=q[-1]
+        if (q==1) : q="STU"
+        elif (q==2) : q="STN"
+        elif (q==3) : q="SCH"
+        elif (q==3) : q="CHI"
+        else : q="CSO"
+        pred="asc-dsc"
+    
+    return render_template('pass.html', p=pred,q=q) 
     
 
 if __name__ == '__main__':
